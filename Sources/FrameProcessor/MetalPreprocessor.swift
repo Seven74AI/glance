@@ -64,12 +64,18 @@ final class MetalPreprocessor {
         }
         self.commandQueue = queue
 
-        // Load the default Metal library (compiled from PreprocessShader.metal)
-        guard let library = device.makeDefaultLibrary() else {
+        // Load Metal library — tries default library first (Xcode),
+        // falls back to compiling from bundled source (SPM).
+        let library: MTLLibrary
+        if let defaultLib = device.makeDefaultLibrary() {
+            library = defaultLib
+        } else if let bundledLib = MetalPreprocessor.loadLibraryFromBundle(device: device) {
+            library = bundledLib
+        } else {
             fatalError("""
-                Failed to load default Metal library.
-                Ensure PreprocessShader.metal is included in the target's
-                compile sources and the Metal library is embedded.
+                Failed to load Metal library.
+                Ensure PreprocessShader.metal is included in the target's resources
+                (SPM: .process("PreprocessShader.metal")) or compile sources (Xcode).
                 """)
         }
 
@@ -192,6 +198,27 @@ final class MetalPreprocessor {
     }
 
     // MARK: - Private Helpers
+
+    /// Compiles a Metal library from the bundled PreprocessShader.metal source file.
+    /// Used as a fallback when makeDefaultLibrary() is unavailable (e.g. SPM builds).
+    private static func loadLibraryFromBundle(device: MTLDevice) -> MTLLibrary? {
+        // Locate the shader source in the module bundle
+        guard let shaderURL = Bundle.module.url(
+            forResource: "PreprocessShader",
+            withExtension: "metal"
+        ) else {
+            return nil
+        }
+
+        guard let source = try? String(contentsOf: shaderURL, encoding: .utf8) else {
+            return nil
+        }
+
+        let compileOptions = MTLCompileOptions()
+        compileOptions.languageVersion = .version3_1
+
+        return try? device.makeLibrary(source: source, options: compileOptions)
+    }
 
     /// Compiles a compute pipeline from a named Metal function.
     private static func compilePipeline(

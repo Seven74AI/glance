@@ -1,6 +1,6 @@
 // swift-tools-version: 5.9
 // Glance — macOS screen-to-AI tool
-// Unified package: CaptureEngine (1.1) + GlanceUI (1.4)
+// Unified package for all Phase 1 modules.
 // Integration task (1.5) will wire all modules together.
 
 import PackageDescription
@@ -15,6 +15,11 @@ let package = Package(
         .library(
             name: "CaptureEngine",
             targets: ["CaptureEngine"]
+        ),
+        // Frame processor library (Phase 1.2) — Metal + JPEG pipeline
+        .library(
+            name: "GlanceFrameProcessor",
+            targets: ["FrameProcessor"]
         ),
         // UI framework library (Phase 1.4)
         .library(
@@ -50,6 +55,27 @@ let package = Package(
             name: "CaptureEngineTests",
             dependencies: ["CaptureEngine"],
             path: "Tests/CaptureEngineTests"
+        ),
+
+        // Frame Processor — Metal preprocessing + JPEG encoding (Phase 1.2)
+        .target(
+            name: "FrameProcessor",
+            dependencies: [],
+            path: "Sources/FrameProcessor",
+            resources: [
+                .process("PreprocessShader.metal")
+            ]
+        ),
+        .testTarget(
+            name: "FrameProcessorTests",
+            dependencies: ["FrameProcessor"],
+            path: "Tests/FrameProcessorTests",
+            exclude: ["Benchmarks"]
+        ),
+        .testTarget(
+            name: "FrameProcessorBenchmarks",
+            dependencies: ["FrameProcessor"],
+            path: "Tests/FrameProcessorTests/Benchmarks"
         ),
 
         // Glance UI — Menu bar, overlay, preferences (Phase 1.4)
