@@ -1,0 +1,17 @@
+{
+  "providers": {
+    "claude": {
+      "apiKey": "sk-ant-...",
+      "model": "claude-sonnet-4-20250514"
+    },
+    "openai": {
+      "apiKey": "sk-...",
+      "model": "gpt-4o"
+    },
+    "gemini": {
+      "apiKey": "...",
+      "model": "gemini-2.5-flash"
+    }
+  },
+  "defaultProvider": "claude"
+}
