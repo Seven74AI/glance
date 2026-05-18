@@ -148,9 +148,8 @@ final class GlancePipelineTests: XCTestCase {
         XCTAssertEqual(viewModel.state, .thinking,
                        "Should transition to THINKING after confirm")
 
-        // Wait for AI response to be processed.
-        // The pipeline waits `previewDuration + 500ms` before sending to AI.
-        try? await Task.sleep(nanoseconds: UInt64(viewModel.previewDuration * 1_000_000_000) + 1_000_000_000)
+        // Wait for AI response to be processed (Combine-based — starts immediately).
+        try? await Task.sleep(nanoseconds: 500_000_000)
 
         // After AI responds, state should be .showing.
         XCTAssertEqual(viewModel.state, .showing,
@@ -184,7 +183,7 @@ final class GlancePipelineTests: XCTestCase {
         XCTAssertEqual(viewModel.state, .thinking)
 
         // Wait for AI error processing.
-        try? await Task.sleep(nanoseconds: UInt64(viewModel.previewDuration * 1_000_000_000) + 1_000_000_000)
+        try? await Task.sleep(nanoseconds: 500_000_000)
 
         // After AI error, the state should reset to idle with error message.
         XCTAssertEqual(viewModel.state, .idle)
@@ -233,7 +232,7 @@ final class GlancePipelineTests: XCTestCase {
         try? await Task.sleep(nanoseconds: 200_000_000)
         viewModel.confirmSend()
 
-        try? await Task.sleep(nanoseconds: UInt64(viewModel.previewDuration * 1_000_000_000) + 1_000_000_000)
+        try? await Task.sleep(nanoseconds: 500_000_000)
 
         // Verify the mock was called with Gemini.
         XCTAssertEqual(mockAIClient.lastProvider, .gemini)
@@ -258,7 +257,7 @@ final class GlancePipelineTests: XCTestCase {
         try? await Task.sleep(nanoseconds: 200_000_000)
         viewModel.confirmSend()
 
-        try? await Task.sleep(nanoseconds: UInt64(viewModel.previewDuration * 1_000_000_000) + 1_000_000_000)
+        try? await Task.sleep(nanoseconds: 500_000_000)
 
         XCTAssertEqual(mockAIClient.lastProvider, .openAI)
         XCTAssertEqual(mockAIClient.lastAPIKey, "sk-openai")

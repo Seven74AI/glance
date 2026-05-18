@@ -129,6 +129,7 @@ let package = Package(
                 "GlanceUI",
                 "CaptureEngine",
                 "FrameProcessor",
+                "AIProvider",  // Post-MVP: AIClient will delegate to AIProvider providers
             ],
             path: "App/GlanceApp",
             swiftSettings: [

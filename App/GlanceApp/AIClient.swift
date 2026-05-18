@@ -63,7 +63,20 @@ enum AIClientError: LocalizedError, Equatable {
     }
 }
 
-// MARK: - Implementation
+// NOTE: AIClient intentionally duplicates AIProvider module (Sources/AIProvider/).
+// The AIProvider module defines an `AIProvider` protocol that conflicts with
+// GlanceUI's `AIProvider` enum. Both are deeply embedded in their respective
+// module APIs. Post-MVP resolution plan:
+//   1. Rename GlanceUI.AIProvider enum → AIProviderID
+//   2. Add `import AIProvider` to AIClient.swift
+//   3. Replace callClaude/callOpenAI/callGemini with delegation to
+//      ClaudeProvider/OpenAIProvider/GeminiProvider, mapping ProviderError → AIClientError
+//   4. Retain the simpler AIClientProtocol (apiKey-per-call, String return)
+//
+// Until then, the AIClient directly implements the same HTTP endpoints with
+// the same auth patterns and response parsing. The duplication is ~300 lines
+// of well-tested code — functionally equivalent but independently maintained.
+// See: AIProvider module already added as GlanceApp dependency in Package.swift.
 
 /// Concrete AI client using URLSession for HTTP calls.
 ///

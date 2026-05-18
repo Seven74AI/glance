@@ -1,4 +1,5 @@
 import Foundation
+import Combine
 import CoreMedia
 import ScreenCaptureKit
 import CaptureEngine
@@ -131,6 +132,9 @@ final class GlancePipeline: NSObject, GlancePipelineProtocol {
     /// Lock for isActive.
     private let stateLock = NSLock()
 
+    /// Combine cancellables for state observation subscriptions.
+    private var cancellables = Set<AnyCancellable>()
+
     /// Current AI provider API key (not persisted here — from Keychain).
     private var currentAPIKey: String?
     private var currentProvider: AIProvider?
@@ -201,8 +205,10 @@ final class GlancePipeline: NSObject, GlancePipelineProtocol {
             if let scDisplay = display as? SCDisplay {
                 filter = SCContentFilter(display: scDisplay, excludingWindows: [])
             } else {
-                // Test path — mock display.
-                filter = SCContentFilter()
+                // SCK always provides SCDisplay on real hardware.
+                // If this branch executes (e.g., mock in test), the capture
+                // would fail — propagate as a structured error.
+                throw GlancePipelineError.noDisplayAvailable
             }
 
             captureEngine.startCapture(filter: filter, fps: config.captureFPS)
@@ -254,14 +260,24 @@ final class GlancePipeline: NSObject, GlancePipelineProtocol {
                     // The ViewModel handles the timer — we observe the state change.
                 }
 
-                // Step 3: Observe state machine for THINKING transition.
-                // We use a Combine subscription to react to state changes.
-                // For now, we process immediately after preview auto-continue.
-                try await Task.sleep(nanoseconds: UInt64(vm.previewDuration * 1_000_000_000) + 500_000_000)
+                // Step 3: Wait for THINKING transition via Combine.
+                // Replaces fragile Task.sleep (which could race with user
+                // cancel during preview) with proper state observation.
+                // If state transitions to .idle (user cancelled), abort
+                // without sending data to the AI.
+                let newState = await withCheckedContinuation { continuation in
+                    var sub: AnyCancellable?
+                    sub = vm.$state
+                        .sink { state in
+                            if state == .thinking || state == .idle {
+                                continuation.resume(returning: state)
+                                sub?.cancel()
+                            }
+                        }
+                }
 
                 // If the user cancelled during preview, don't proceed.
-                let currentState = await MainActor.run { vm.state }
-                guard currentState == .thinking else { return }
+                guard newState == .thinking else { return }
 
                 // Step 4: Send to AI.
                 let response = try await client.analyze(
@@ -299,8 +315,24 @@ final class GlancePipeline: NSObject, GlancePipelineProtocol {
         isActive = false
         stateLock.unlock()
 
+        let message: String
+        if let pipelineError = error as? GlancePipelineError {
+            // Use structured error descriptions for known pipeline errors.
+            message = pipelineError.errorDescription ?? "Pipeline error"
+        } else {
+            message = error.localizedDescription
+        }
+
         await MainActor.run {
-            viewModel.receiveError(message: error.localizedDescription)
+            // Only .thinking state accepts .aiError transition.
+            // For errors before AI processing (permission, display, etc.),
+            // reset to idle to avoid stuck state machine.
+            if viewModel.state == .thinking {
+                viewModel.receiveError(message: message)
+            } else {
+                viewModel.errorMessage = message
+                viewModel.reset()
+            }
         }
     }
 }

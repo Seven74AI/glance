@@ -34,6 +34,7 @@ final class AIClientTests: XCTestCase {
     override func tearDown() {
         MockURLProtocol.responseData = nil
         MockURLProtocol.responseStatusCode = 200
+        MockURLProtocol.responseHeaders = nil
         MockURLProtocol.responseError = nil
         client = nil
         mockSession = nil
@@ -294,6 +295,27 @@ final class AIClientTests: XCTestCase {
         }
     }
 
+    func test_httpError_429_withRetryAfterHeader() async throws {
+        // Verify the Retry-After header is parsed and surfaced in the error.
+        MockURLProtocol.responseData = Data()
+        MockURLProtocol.responseStatusCode = 429
+        MockURLProtocol.responseHeaders = ["Retry-After": "30"]
+
+        do {
+            _ = try await client.analyze(
+                image: validJPEGData,
+                provider: .openAI,
+                apiKey: "sk-test",
+                question: nil
+            )
+            XCTFail("Expected error")
+        } catch AIClientError.rateLimited(let retryAfter) {
+            XCTAssertEqual(retryAfter, 30, "Retry-After header should be parsed as 30s")
+        } catch {
+            XCTFail("Unexpected error: \(error)")
+        }
+    }
+
     func test_httpError_500_throwsServerError() async throws {
         MockURLProtocol.responseData = "{}".data(using: .utf8)
         MockURLProtocol.responseStatusCode = 500
@@ -396,6 +418,8 @@ final class MockURLProtocol: URLProtocol {
     static var responseData: Data?
     /// Stub HTTP status code.
     static var responseStatusCode: Int = 200
+    /// Stub response headers (e.g., Retry-After for 429 tests).
+    static var responseHeaders: [String: String]?
     /// Stub error for the next request.
     static var responseError: Error?
     /// Captured last request for assertion.
@@ -424,7 +448,7 @@ final class MockURLProtocol: URLProtocol {
             url: request.url!,
             statusCode: MockURLProtocol.responseStatusCode,
             httpVersion: "HTTP/1.1",
-            headerFields: nil
+            headerFields: MockURLProtocol.responseHeaders
         )!
 
         client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
