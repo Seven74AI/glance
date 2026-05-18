@@ -48,22 +48,13 @@ public final class OverlayWindow: NSWindow {
         hostingView.autoresizingMask = [.width, .height]
         contentView = hostingView
 
-        // Close on Esc key.
+        // Close on Esc key via cancelOperation(_:) (works on non-key windows).
         self.isReleasedWhenClosed = false
     }
 
-    // MARK: - Key Handling
-
-    /// Override to handle Esc key for dismiss.
-    public override func keyDown(with event: NSEvent) {
-        if event.keyCode == 53 {  // Esc
-            close()
-            return
-        }
-        super.keyDown(with: event)
-    }
-
     /// Allow Esc to close even without being key window.
+    /// This is the exclusive Esc path — keyDown never fires because
+    /// the nonactivatingPanel never becomes key (orderFront, not makeKeyAndOrderFront).
     public override func cancelOperation(_ sender: Any?) {
         close()
     }
