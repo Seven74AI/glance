@@ -7,7 +7,7 @@ import CoreVideo
 enum MetalPreprocessorError: Error, Equatable {
     case invalidTargetSize
     case pipelineCreationFailed(String)
-    case commandBufferFailed
+    case commandBufferFailed(String)
 }
 
 // MARK: - Filter Mode
@@ -166,7 +166,7 @@ final class MetalPreprocessor {
         // Dispatch compute kernel
         guard let commandBuffer = commandQueue.makeCommandBuffer(),
               let encoder = commandBuffer.makeComputeCommandEncoder() else {
-            throw MetalPreprocessorError.commandBufferFailed
+            throw MetalPreprocessorError.commandBufferFailed("Failed to create command buffer or encoder")
         }
 
         encoder.setComputePipelineState(pipeline)
@@ -189,7 +189,7 @@ final class MetalPreprocessor {
         commandBuffer.waitUntilCompleted()
 
         if let error = commandBuffer.error {
-            throw MetalPreprocessorError.pipelineCreationFailed(
+            throw MetalPreprocessorError.commandBufferFailed(
                 "GPU error: \(error.localizedDescription)"
             )
         }
