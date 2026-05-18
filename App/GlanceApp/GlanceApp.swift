@@ -2,13 +2,15 @@ import SwiftUI
 import AppKit
 import Combine
 import KeyboardShortcuts
+import CaptureEngine
+import FrameProcessor
 
 /// Glance main application — SwiftUI App with NSApplicationDelegate.
 ///
 /// Wires together:
+/// - GlancePipeline (CaptureEngine → FrameProcessor → AIClient → StateMachineViewModel)
 /// - MenuBarManager (menu bar icon + menu)
 /// - KeyboardShortcutManager (global shortcut ⌃⌥⌘G)
-/// - StateMachineViewModel (UX state machine)
 /// - OverlayWindow (floating overlay)
 /// - PreferencesWindowController (preferences)
 @main
@@ -26,15 +28,32 @@ public struct GlanceApp: App {
 // MARK: - App Delegate
 
 /// NSApplicationDelegate for Glance.
-/// Manages the app lifecycle, menu bar, overlay, and preferences.
+/// Manages the app lifecycle, pipeline, menu bar, overlay, and preferences.
 public final class AppDelegate: NSObject, NSApplicationDelegate {
     // MARK: - Managers
 
     private let menuBarManager = MenuBarManager()
-    private let viewModel = StateMachineViewModel()
     private let preferencesViewModel = PreferencesViewModel()
     private var preferencesWindowController: PreferencesWindowController?
     private var overlayWindow: OverlayWindow?
+
+    // MARK: - Pipeline
+
+    /// The GlancePipeline orchestrating: Capture → Process → AI → Display.
+    private let pipeline: GlancePipeline
+
+    /// The ViewModel driving UX state (from the pipeline).
+    private let viewModel: StateMachineViewModel
+
+    // MARK: - Initialization
+
+    public override init() {
+        // Create the pipeline with default dependencies.
+        let vm = StateMachineViewModel()
+        self.viewModel = vm
+        self.pipeline = GlancePipeline(viewModel: vm)
+        super.init()
+    }
 
     // MARK: - Application Lifecycle
 
@@ -61,6 +80,9 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     public func applicationWillTerminate(_ notification: Notification) {
+        // Stop any active capture.
+        pipeline.stopCapture()
+
         // Save preferences on quit.
         preferencesViewModel.saveCredentials()
     }
@@ -69,11 +91,29 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
 
     /// Trigger a new screen capture flow.
     private func triggerCapture() {
-        let defaultMode = preferencesViewModel.defaultCaptureMode
-        viewModel.startCaptureFlow(mode: defaultMode)
+        let mode = preferencesViewModel.defaultCaptureMode
 
         // Show the overlay immediately (mode picker).
-        showOverlay(for: defaultMode)
+        showOverlay(for: mode)
+
+        // Start the capture pipeline asynchronously.
+        Task {
+            guard preferencesViewModel.hasAPIKey else {
+                await MainActor.run {
+                    viewModel.receiveError(message: "No API key configured. Add your key in Preferences.")
+                }
+                return
+            }
+
+            let apiKey = preferencesViewModel.apiKey
+            let provider = preferencesViewModel.selectedProvider
+
+            await pipeline.startCapture(
+                mode: mode,
+                apiKey: apiKey,
+                provider: provider
+            )
+        }
     }
 
     // MARK: - Overlay Management
@@ -90,12 +130,11 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
                 self?.dismissOverlay()
             },
             onCaptureModeSelected: { [weak self] selectedMode in
-                // Mode selected — the capture engine (Phase 1.1) would take over here.
-                // For now, simulate capture completion after mode selection.
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                    self?.viewModel.completeCapture()
-                    self?.refreshOverlay()
-                }
+                // Mode selected via UI — update the pipeline's capture mode.
+                // The capture engine handles the actual capture based on mode.
+                self?.viewModel.selectedCaptureMode = selectedMode
+                // Capture completion will be triggered by the pipeline once
+                // the first frame arrives from ScreenCaptureKit.
             }
         )
 
@@ -126,7 +165,8 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
                 self?.dismissOverlay()
             },
             onCaptureModeSelected: { [weak self] _ in
-                // Re-entry from "Share Again" — handled by the view model.
+                // Re-entry from "Share Again" — handled by the pipeline.
+                self?.triggerCapture()
             }
         )
 
@@ -139,6 +179,7 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
         overlayWindow?.animateOut { [weak self] in
             self?.overlayWindow = nil
         }
+        pipeline.stopCapture()
         viewModel.reset()
         menuBarManager.updateState(.idle)
     }
@@ -159,7 +200,6 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
 
     /// Observe ViewModel state changes to update UI.
     private func observeViewModel() {
-        // Use Combine to react to state transitions.
         viewModel.$state
             .receive(on: DispatchQueue.main)
             .sink { [weak self] newState in
@@ -201,4 +241,3 @@ extension AppDelegate: NSWindowDelegate {
         }
     }
 }
-

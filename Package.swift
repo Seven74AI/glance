@@ -125,11 +125,22 @@ let package = Package(
         // GlanceApp — Main .app executable
         .executableTarget(
             name: "GlanceApp",
-            dependencies: ["GlanceUI"],
+            dependencies: [
+                "GlanceUI",
+                "CaptureEngine",
+                "FrameProcessor",
+            ],
             path: "App/GlanceApp",
             swiftSettings: [
                 .enableUpcomingFeature("StrictConcurrency")
             ]
+        ),
+
+        // GlanceAppTests — Integration tests for pipeline + AI client
+        .testTarget(
+            name: "GlanceAppTests",
+            dependencies: ["GlanceApp"],
+            path: "Tests/GlanceAppTests"
         ),
     ]
 )
