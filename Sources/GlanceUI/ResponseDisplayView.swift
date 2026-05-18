@@ -79,7 +79,7 @@ public struct ResponseDisplayView: View {
     private var responseContentView: some View {
         if #available(macOS 15.0, *) {
             // SwiftUI native Markdown rendering (macOS 15+)
-            Text(LocalizedStringKey(responseText))
+            Text(responseText)
                 .font(.body)
                 .textSelection(.enabled)
                 .lineSpacing(4)

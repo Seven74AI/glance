@@ -85,7 +85,7 @@ public final class OverlayWindow: NSWindow {
     /// Fade-in animation.
     public func animateIn() {
         alphaValue = 0
-        makeKeyAndOrderFront(nil)
+        orderFront(nil)
         NSAnimationContext.runAnimationGroup { ctx in
             ctx.duration = 0.2
             ctx.timingFunction = CAMediaTimingFunction(name: .easeOut)
