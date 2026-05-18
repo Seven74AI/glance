@@ -1,0 +1,20 @@
+# Glance — Metal Frame Processor
+# macOS 14.0+, Swift 5.9+, Metal 3
+
+# Xcode
+*.xcworkspace
+*.xcuserdata
+DerivedData/
+Build/
+
+# Swift Package Manager
+.build/
+Packages/
+
+# macOS
+.DS_Store
+
+# Secrets
+.env
+*.p12
+*.pem
