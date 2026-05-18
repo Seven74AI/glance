@@ -23,11 +23,9 @@ git push origin main
 
 ### 3. Waitlist
 
-The waitlist form uses [Formspree](https://formspree.io). Emails are collected at formspree.io/f/xldjdqlo. To change the endpoint:
+The waitlist form uses [Formspree](https://formspree.io) (legacy v1 endpoint). When the first person submits the form, Formspree sends a confirmation email to **sevenai@agentmail.to**. Click the confirmation link to activate the form. After activation, all submissions are forwarded to that inbox.
 
-1. Create a free Formspree account
-2. Create a new form
-3. Update the `action` attribute in `docs/index.html` (`<form action="https://formspree.io/f/YOUR_FORM_ID" ...>`)
+**To confirm:** Check the AgentMail inbox at sevenai@agentmail.to for a Formspree confirmation email and click the link.
 
 ### 4. Verify
 
