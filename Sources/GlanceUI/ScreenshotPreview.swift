@@ -7,7 +7,7 @@ import SwiftUI
 /// - Cancel button to abort
 /// - Optional text input: "Ask a question about this screen..."
 /// - Auto-continues after previewDuration if autoContinue is enabled
-/// - Countdown timer shown in the UI
+/// - Countdown display driven by ViewModel (timer ownership in ViewModel)
 public struct ScreenshotPreview: View {
     /// Raw JPEG data of the captured screenshot.
     let imageData: Data?
@@ -18,6 +18,9 @@ public struct ScreenshotPreview: View {
     /// Duration of the preview in seconds.
     let previewDuration: TimeInterval
 
+    /// Remaining seconds in the preview countdown (driven by ViewModel).
+    let remainingSeconds: TimeInterval
+
     /// Whether to auto-continue after previewDuration.
     let autoContinue: Bool
 
@@ -27,13 +30,11 @@ public struct ScreenshotPreview: View {
     /// Called when user cancels.
     let onCancel: () -> Void
 
-    @State private var remainingSeconds: TimeInterval = 2.0
-    @State private var timer: Timer?
-
     public init(
         imageData: Data?,
         userQuestion: Binding<String?>,
         previewDuration: TimeInterval = 2.0,
+        remainingSeconds: TimeInterval = 2.0,
         autoContinue: Bool = true,
         onConfirm: @escaping () -> Void,
         onCancel: @escaping () -> Void
@@ -41,10 +42,10 @@ public struct ScreenshotPreview: View {
         self.imageData = imageData
         self._userQuestion = userQuestion
         self.previewDuration = previewDuration
+        self.remainingSeconds = remainingSeconds
         self.autoContinue = autoContinue
         self.onConfirm = onConfirm
         self.onCancel = onCancel
-        self.remainingSeconds = previewDuration
     }
 
     public var body: some View {
@@ -65,13 +66,6 @@ public struct ScreenshotPreview: View {
             actionButtons
         }
         .padding(.vertical, 12)
-        .onAppear {
-            startCountdown()
-        }
-        .onDisappear {
-            timer?.invalidate()
-            timer = nil
-        }
     }
 
     // MARK: - Subviews
@@ -153,10 +147,7 @@ public struct ScreenshotPreview: View {
             .buttonStyle(SecondaryButtonStyle())
             .keyboardShortcut(.escape, modifiers: [])
 
-            Button(action: {
-                timer?.invalidate()
-                onConfirm()
-            }) {
+            Button(action: onConfirm) {
                 Text("Send")
                     .frame(maxWidth: .infinity)
             }
@@ -167,23 +158,6 @@ public struct ScreenshotPreview: View {
         .padding(.vertical, 12)
     }
 
-    // MARK: - Timer
-
-    private func startCountdown() {
-        guard autoContinue else { return }
-
-        remainingSeconds = previewDuration
-        timer = Timer.scheduledTimer(withTimeInterval: 0.25, repeats: true) { t in
-            Task { @MainActor in
-                remainingSeconds -= 0.25
-                if remainingSeconds <= 0 {
-                    t.invalidate()
-                    timer = nil
-                    onConfirm()
-                }
-            }
-        }
-    }
 }
 
 // MARK: - Button Styles

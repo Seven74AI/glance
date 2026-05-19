@@ -93,6 +93,10 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
     private func triggerCapture() {
         let mode = preferencesViewModel.defaultCaptureMode
 
+        // Transition to SELECTING state BEFORE showing overlay
+        // to avoid a flash of EmptyView() (IDLE state).
+        viewModel.startCaptureFlow(mode: mode)
+
         // Show the overlay immediately (mode picker).
         showOverlay(for: mode)
 

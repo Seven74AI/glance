@@ -77,25 +77,13 @@ public struct ResponseDisplayView: View {
 
     @ViewBuilder
     private var responseContentView: some View {
-        if #available(macOS 15.0, *) {
-            // SwiftUI native Markdown rendering (macOS 15+)
-            Text(responseText)
-                .font(.body)
-                .textSelection(.enabled)
-                .lineSpacing(4)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, 20)
-                .padding(.vertical, 12)
-        } else {
-            // Fallback: plain text with basic formatting
-            Text(responseText)
-                .font(.body)
-                .textSelection(.enabled)
-                .lineSpacing(4)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, 20)
-                .padding(.vertical, 12)
-        }
+        Text(responseText)
+            .font(.body)
+            .textSelection(.enabled)
+            .lineSpacing(4)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 20)
+            .padding(.vertical, 12)
     }
 
     private var followUpSection: some View {

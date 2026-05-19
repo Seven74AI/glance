@@ -28,12 +28,19 @@ public struct AIThinkingView: View {
                     .foregroundColor(.secondary)
             }
 
-            // Animated dots
+            // Animated dots (staggered)
             HStack(spacing: 6) {
                 ForEach(0..<3) { index in
                     Circle()
-                        .fill(Color.accentColor.opacity(dotOpacity(for: index)))
+                        .fill(Color.accentColor)
                         .frame(width: 8, height: 8)
+                        .opacity(isAnimating ? 1.0 : 0.3)
+                        .animation(
+                            .easeInOut(duration: 0.6)
+                                .repeatForever(autoreverses: true)
+                                .delay(Double(index) * 0.2),
+                            value: isAnimating
+                        )
                 }
             }
             .padding(.bottom, 24)
@@ -41,16 +48,7 @@ public struct AIThinkingView: View {
         .frame(maxWidth: .infinity)
         .padding(.horizontal, 20)
         .onAppear {
-            withAnimation(.easeInOut(duration: 0.6).repeatForever(autoreverses: true)) {
-                isAnimating = true
-            }
+            isAnimating = true
         }
-    }
-
-    private func dotOpacity(for index: Int) -> Double {
-        // Stagger the dot animations.
-        let base = isAnimating ? 1.0 : 0.3
-        let delay = Double(index) * 0.2
-        return base
     }
 }

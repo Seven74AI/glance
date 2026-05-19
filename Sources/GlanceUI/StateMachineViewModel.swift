@@ -34,6 +34,9 @@ public final class StateMachineViewModel: ObservableObject {
     /// Raw screenshot data (JPEG).
     @Published public var capturedImageData: Data?
 
+    /// Remaining preview seconds (countdown from previewDuration to 0).
+    @Published public var remainingPreviewSeconds: TimeInterval = 0
+
     // MARK: - Timer Configuration
 
     /// Duration to show preview before auto-continue (seconds).
@@ -171,12 +174,20 @@ public final class StateMachineViewModel: ObservableObject {
 
     private func startPreviewTimer() {
         guard previewAutoContinue else { return }
+        remainingPreviewSeconds = previewDuration
         previewTimer = Timer.scheduledTimer(
-            withTimeInterval: previewDuration,
-            repeats: false
-        ) { [weak self] _ in
+            withTimeInterval: 0.25,
+            repeats: true
+        ) { [weak self] timer in
             Task { @MainActor in
-                self?.confirmSend()
+                guard let self else { return }
+                self.remainingPreviewSeconds -= 0.25
+                if self.remainingPreviewSeconds <= 0 {
+                    timer.invalidate()
+                    self.previewTimer = nil
+                    self.remainingPreviewSeconds = 0
+                    self.confirmSend()
+                }
             }
         }
     }

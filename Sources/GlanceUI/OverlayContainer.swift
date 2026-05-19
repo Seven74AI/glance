@@ -56,6 +56,7 @@ public struct OverlayContainer: View {
                     imageData: viewModel.capturedImageData,
                     userQuestion: $viewModel.userQuestion,
                     previewDuration: viewModel.previewDuration,
+                    remainingSeconds: viewModel.remainingPreviewSeconds,
                     autoContinue: viewModel.previewAutoContinue,
                     onConfirm: {
                         viewModel.confirmSend()
