@@ -157,15 +157,15 @@ final class AIClient: AIClientProtocol {
                 "source": [
                     "type": "base64",
                     "media_type": "image/jpeg",
-                    "data": base64Image,
-                ],
-            ],
+                    "data": base64Image
+                ]
+            ]
         ]
 
         let promptText = question ?? "Describe what you see on this screen. Be concise and helpful."
         content.append([
             "type": "text",
-            "text": promptText,
+            "text": promptText
         ])
 
         let body: [String: Any] = [
@@ -174,9 +174,9 @@ final class AIClient: AIClientProtocol {
             "messages": [
                 [
                     "role": "user",
-                    "content": content,
-                ],
-            ],
+                    "content": content
+                ]
+            ]
         ]
 
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
@@ -213,15 +213,15 @@ final class AIClient: AIClientProtocol {
         let userContent: [[String: Any]] = [
             [
                 "type": "text",
-                "text": promptText,
+                "text": promptText
             ],
             [
                 "type": "image_url",
                 "image_url": [
                     "url": "data:image/jpeg;base64,\(base64Image)",
-                    "detail": "auto",
-                ],
-            ],
+                    "detail": "auto"
+                ]
+            ]
         ]
 
         let body: [String: Any] = [
@@ -230,9 +230,9 @@ final class AIClient: AIClientProtocol {
             "messages": [
                 [
                     "role": "user",
-                    "content": userContent,
-                ],
-            ],
+                    "content": userContent
+                ]
+            ]
         ]
 
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
@@ -258,7 +258,8 @@ final class AIClient: AIClientProtocol {
         base64Image: String,
         question: String?
     ) async throws -> String {
-        let url = URL(string: "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=\(apiKey)")!
+        let url = URL(string: "https://generativelanguage.googleapis.com/v1beta/models/"
+            + "gemini-2.5-flash:generateContent?key=\(apiKey)")!
         var request = URLRequest(url: url, timeoutInterval: timeout)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
@@ -273,15 +274,15 @@ final class AIClient: AIClientProtocol {
                         [
                             "inline_data": [
                                 "mime_type": "image/jpeg",
-                                "data": base64Image,
-                            ],
-                        ],
-                    ],
-                ],
+                                "data": base64Image
+                            ]
+                        ]
+                    ]
+                ]
             ],
             "generationConfig": [
-                "maxOutputTokens": 1024,
-            ],
+                "maxOutputTokens": 1024
+            ]
         ]
 
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
