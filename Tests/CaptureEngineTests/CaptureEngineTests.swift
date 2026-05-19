@@ -129,19 +129,14 @@ final class CaptureEngineTests: XCTestCase {
 
     func test_startCapture_whenAlreadyCapturing_stopsOldStreamFirst() {
         // Given: an active capture session
-        let firstStream = mockStream!
         engine.startCapture(filter: MockSCContentFilter(), fps: 10)
+        XCTAssertTrue(mockStream.didStart, "First stream should be started")
 
-        // When: starting a new capture
-        let secondStream = MockSCStream()
-        let newEngine = CaptureEngine(streamFactory: { _ in secondStream })
-        newEngine.startCapture(filter: MockSCContentFilter(), fps: 10)
+        // When: starting a new capture on the same engine
+        engine.startCapture(filter: MockSCContentFilter(), fps: 30)
 
-        // Then: old engine's stream should be stopped
-        XCTAssertTrue(firstStream.didStop, "Old stream should be stopped")
-
-        // Cleanup
-        newEngine.stopCapture()
+        // Then: old stream should be stopped before new one starts
+        XCTAssertTrue(mockStream.didStop, "Old stream should be stopped")
     }
 
     // MARK: - Frame Delivery Tests
@@ -345,22 +340,18 @@ final class CaptureEngineTests: XCTestCase {
         // Given: capture is active
         engine.startCapture(filter: MockSCContentFilter(), fps: 10)
         let testBuffer = makeTestPixelBuffer()
-        let expectedTimestamp = CMTime(value: 42, timescale: 10)
 
-        // When: a frame arrives with a known timestamp
-        let frame = CapturedFrame(
-            pixelBuffer: testBuffer,
-            timestamp: expectedTimestamp,
-            contentRect: .zero,
-            scaleFactor: 1.0
-        )
+        // When: a frame arrives via simulateFrame (uses CMTime(value: 1, timescale: 10))
         mockStream.simulateFrame(buffer: testBuffer, status: .complete)
 
-        // Then: metadata timestamp should be preserved
-        // (Note: simulateFrame creates its own CapturedFrame; this test
-        //  verifies handleFrame creates proper FrameMetadata)
+        // Then: metadata should preserve the timestamp from the captured frame
         XCTAssertTrue(mockDelegate.didReceiveFrame, "Delegate should receive frame")
         XCTAssertNotNil(mockDelegate.lastMetadata, "Metadata should be present")
+        if let metadata = mockDelegate.lastMetadata {
+            let expectedTimestamp = CMTime(value: 1, timescale: 10)
+            XCTAssertEqual(CMTimeCompare(metadata.timestamp, expectedTimestamp), 0,
+                           "Metadata timestamp should match the captured frame timestamp")
+        }
     }
 
     func test_handleFrame_metadataStatusIsComplete() {
