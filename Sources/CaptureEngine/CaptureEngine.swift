@@ -92,7 +92,7 @@ final class CaptureEngine: CaptureEngineProtocol {
         let windows = content.windows.map { window in
             ConcreteWindow(
                 windowID: window.windowID,
-                title: window.title ?? "",
+                title: window.title,
                 applicationName: window.owningApplication?.applicationName ?? ""
             )
         }
@@ -319,6 +319,6 @@ struct ConcreteApplication: ApplicationProtocol {
 
 struct ConcreteWindow: WindowProtocol {
     let windowID: UInt32
-    let title: String
+    let title: String?
     let applicationName: String
 }

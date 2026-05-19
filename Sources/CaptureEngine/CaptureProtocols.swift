@@ -19,16 +19,16 @@ protocol SCStreamProtocol: AnyObject {
 protocol SCStreamConfigurationProtocol: AnyObject {
     var width: Int { get set }
     var height: Int { get set }
-    var pixelFormat: PixelFormat { get set }
+    var pixelFormat: Int { get set }
     var queueDepth: Int { get set }
     var minimumFrameInterval: CMTime { get set }
-    var colorSpaceName: CFString? { get set }
+    var colorSpaceName: CGColorSpace? { get set }
 }
 
 /// Wraps SCContentFilter
 protocol SCContentFilterProtocol: AnyObject {
-    var contentRect: CGRect { get set }
-    var pointPixelScale: CGFloat { get set }
+    var contentRect: CGRect { get }
+    var pointPixelScale: CGFloat { get }
 }
 
 // MARK: - Shared Content Protocols
@@ -52,15 +52,8 @@ protocol ApplicationProtocol {
 
 protocol WindowProtocol {
     var windowID: UInt32 { get }
-    var title: String { get }
+    var title: String? { get }
     var applicationName: String { get }
-}
-
-// MARK: - Pixel Format
-
-enum PixelFormat {
-    case BGRA8
-    case YUV420
 }
 
 // MARK: - Frame Status

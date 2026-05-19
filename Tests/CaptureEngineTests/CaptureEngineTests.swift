@@ -1,4 +1,5 @@
 import XCTest
+import CoreVideo
 @testable import CaptureEngine
 
 // MARK: - CaptureEngine Tests
@@ -81,7 +82,7 @@ final class CaptureEngineTests: XCTestCase {
                        "Width should target 1080p")
         XCTAssertEqual(mockStream.lastConfiguration?.height, 1080,
                        "Height should target 1080p")
-        XCTAssertEqual(mockStream.lastConfiguration?.pixelFormat, .BGRA8,
+        XCTAssertEqual(mockStream.lastConfiguration?.pixelFormat, Int(kCVPixelFormatType_32BGRA),
                        "Pixel format should be BGRA8")
         XCTAssertEqual(mockStream.lastConfiguration?.queueDepth, 3,
                        "Queue depth should be 3")

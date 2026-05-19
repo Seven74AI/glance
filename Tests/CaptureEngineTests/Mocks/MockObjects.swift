@@ -52,10 +52,10 @@ final class MockSCStream: SCStreamProtocol {
 final class MockSCStreamConfiguration: NSObject, SCStreamConfigurationProtocol {
     var width: Int = 0
     var height: Int = 0
-    var pixelFormat: PixelFormat = .BGRA8
+    var pixelFormat: Int = 0
     var queueDepth: Int = 3
     var minimumFrameInterval: CMTime = .invalid
-    var colorSpaceName: CFString? = nil
+    var colorSpaceName: CGColorSpace? = nil
 }
 
 // MARK: - Mock SCContentFilter
@@ -86,7 +86,7 @@ struct MockApp: ApplicationProtocol {
 
 struct MockWindow: WindowProtocol {
     let windowID: UInt32
-    let title: String
+    let title: String?
     let applicationName: String
 }
 
