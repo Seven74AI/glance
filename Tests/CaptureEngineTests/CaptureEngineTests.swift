@@ -190,12 +190,12 @@ final class CaptureEngineTests: XCTestCase {
 
     // MARK: - listShareableContent (Integration Test)
 
-    func test_listShareableContent_requiresRealSCK() {
+    func test_listShareableContent_requiresRealSCK() throws {
         // listShareableContent calls SCShareableContent.current which
         // requires actual macOS with ScreenCaptureKit available.
         // This test validates the plumbing is correct; actual content
         // verification is done in integration tests on Mac hardware.
-        XCTAssertTrue(true, "listShareableContent integration test placeholder")
+        try XCTSkipIf(true, "Requires real ScreenCaptureKit — can only run on macOS with display access")
     }
 
     // MARK: - Delegate Callbacks
