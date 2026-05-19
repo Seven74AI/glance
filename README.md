@@ -1,5 +1,7 @@
 # Glance
 
+[![CI](https://github.com/Seven74AI/glance/actions/workflows/ci.yml/badge.svg)](https://github.com/Seven74AI/glance/actions/workflows/ci.yml)
+
 Share any screen or window with AI in real time. Press a hotkey, capture your screen, and get instant AI analysis — Claude, GPT, or Gemini looks at what you're looking at.
 
 **[seven74ai.github.io/glance](https://seven74ai.github.io/glance)** — macOS first, cross-platform later. (glance.sh is planned.)
