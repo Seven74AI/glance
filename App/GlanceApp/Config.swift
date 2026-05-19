@@ -40,7 +40,7 @@ public struct GlanceConfig: Sendable, Codable {
         providers: [
             "claude": ProviderConfig(apiKey: "sk-...", model: "claude-sonnet-4-20250514"),
             "openai": ProviderConfig(apiKey: "sk-...", model: "gpt-4o"),
-            "gemini": ProviderConfig(apiKey: "sk-...", model: "gemini-2.5-flash"),
+            "gemini": ProviderConfig(apiKey: "sk-...", model: "gemini-2.5-flash")
         ],
         defaultProvider: "claude",
         defaultCaptureMode: "windowUnderCursor",
