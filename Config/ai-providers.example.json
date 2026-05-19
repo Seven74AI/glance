@@ -13,5 +13,7 @@
       "model": "gemini-2.5-flash"
     }
   },
-  "defaultProvider": "claude"
+  "defaultProvider": "claude",
+  "defaultCaptureMode": "windowUnderCursor",
+  "keyboardShortcut": "ctrl+option+cmd+G"
 }

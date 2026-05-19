@@ -2,7 +2,7 @@
 
 Share any screen or window with AI in real time. Press a hotkey, capture your screen, and get instant AI analysis — Claude, GPT, or Gemini looks at what you're looking at.
 
-**[glance.sh](https://seven74ai.github.io/glance)** — macOS first, cross-platform later.
+**[seven74ai.github.io/glance](https://seven74ai.github.io/glance)** — macOS first, cross-platform later. (glance.sh is planned.)
 
 > Glance is in early development. The landing page has a waitlist for early access.
 
@@ -184,7 +184,7 @@ swift run Glance
 
 # Release executable:
 swift build -c release
-open .build/release/Glance.app
+open .build/release/Glance
 ```
 
 ### 6. Grant Permissions
@@ -226,8 +226,9 @@ All pushes and PRs trigger GitHub Actions on `macos-14` runners:
 
 | Job | What it runs |
 |-----|-------------|
-| **Build & Test** | `swift build -c debug`, `swift test -c debug --parallel`, `swift test -c release --parallel` |
 | **Lint** | `swiftlint --strict` |
+| **Build** | `swift build -c debug` (with SPM dependency caching) |
+| **Test** | `swift test -c debug --parallel`, `swift test -c release --parallel` (depends on `build`)
 
 ### Code Conventions
 
