@@ -407,6 +407,135 @@ final class AIClientTests: XCTestCase {
         let text = textBlocks.first?["text"] as? String ?? ""
         XCTAssertTrue(text.contains("Describe"), "Default prompt should be descriptive")
     }
+
+    // MARK: - Custom Question
+
+    func test_customQuestion_sentInRequestBody() async throws {
+        // Stub a Claude response.
+        MockURLProtocol.responseData = """
+        {"id":"msg","type":"message","role":"assistant","content":[{"type":"text","text":"Yes, it is a login page."}]}
+        """.data(using: .utf8)
+        MockURLProtocol.responseStatusCode = 200
+
+        let customQuestion = "Is this a login page?"
+
+        _ = try await client.analyze(
+            image: validJPEGData,
+            provider: .claude,
+            apiKey: "sk-ant-test",
+            question: customQuestion
+        )
+
+        // Verify the custom question appears in the request body.
+        guard let body = MockURLProtocol.lastRequestBody,
+              let json = try? JSONSerialization.jsonObject(with: body) as? [String: Any],
+              let messages = json["messages"] as? [[String: Any]],
+              let content = messages.first?["content"] as? [[String: Any]] else {
+            XCTFail("Could not parse request body")
+            return
+        }
+
+        let textBlocks = content.filter { ($0["type"] as? String) == "text" }
+        let text = textBlocks.first?["text"] as? String ?? ""
+        XCTAssertEqual(text, customQuestion,
+                       "Custom question should be sent verbatim in request body")
+    }
+
+    // MARK: - Network Error
+
+    func test_networkError_propagatesFromURLSession() async {
+        // Simulate a network connectivity failure (e.g., no internet).
+        // URLSession wraps URLProtocol errors as URLError.
+        let nsError = NSError(domain: NSURLErrorDomain, code: NSURLErrorNotConnectedToInternet,
+                              userInfo: [NSLocalizedDescriptionKey: "No internet connection"])
+        MockURLProtocol.responseError = nsError
+
+        do {
+            _ = try await client.analyze(
+                image: validJPEGData,
+                provider: .claude,
+                apiKey: "sk-ant-test",
+                question: nil
+            )
+            XCTFail("Expected error")
+        } catch {
+            // URLSession wraps URLProtocol errors; the error propagates directly.
+            // Verify it's a URLError with the expected code.
+            let nsErr = error as NSError
+            XCTAssertEqual(nsErr.domain, NSURLErrorDomain,
+                           "Error should be from URL loading system")
+            XCTAssertEqual(nsErr.code, NSURLErrorNotConnectedToInternet,
+                           "Error should indicate no internet connection")
+        }
+    }
+
+    // MARK: - AIClientError Error Description
+
+    func test_errorDescription_missingAPIKey_containsProviderName() {
+        let error = AIClientError.missingAPIKey(.claude)
+        let desc = error.errorDescription ?? ""
+        XCTAssertTrue(desc.contains("Claude"), "Error should name the provider")
+        XCTAssertTrue(desc.contains("API key"), "Error should mention API key")
+    }
+
+    func test_errorDescription_missingAPIKey_geminiProvider() {
+        let error = AIClientError.missingAPIKey(.gemini)
+        let desc = error.errorDescription ?? ""
+        XCTAssertTrue(desc.contains("Gemini"), "Error should name Gemini")
+    }
+
+    func test_errorDescription_missingAPIKey_openAIProvider() {
+        let error = AIClientError.missingAPIKey(.openAI)
+        let desc = error.errorDescription ?? ""
+        XCTAssertTrue(desc.contains("OpenAI"), "Error should name OpenAI")
+    }
+
+    func test_errorDescription_invalidImageData() {
+        let error = AIClientError.invalidImageData
+        let desc = error.errorDescription ?? ""
+        XCTAssertTrue(desc.contains("Invalid image"), "Error should mention invalid image")
+    }
+
+    func test_errorDescription_httpError_containsStatusCode() {
+        let error = AIClientError.httpError(statusCode: 503, body: "Service Unavailable")
+        let desc = error.errorDescription ?? ""
+        XCTAssertTrue(desc.contains("503"), "Error should include status code")
+        XCTAssertTrue(desc.contains("Service Unavailable"), "Error should include body")
+    }
+
+    func test_errorDescription_httpError_404() {
+        let error = AIClientError.httpError(statusCode: 404, body: "Not Found")
+        let desc = error.errorDescription ?? ""
+        XCTAssertTrue(desc.contains("404"), "Error should include 404")
+    }
+
+    func test_errorDescription_rateLimited_withoutRetryAfter() {
+        let error = AIClientError.rateLimited(retryAfter: nil)
+        let desc = error.errorDescription ?? ""
+        XCTAssertTrue(desc.contains("Rate limited"), "Error should mention rate limiting")
+        XCTAssertTrue(desc.contains("wait"), "Error should suggest waiting")
+    }
+
+    func test_errorDescription_rateLimited_withRetryAfter() {
+        let error = AIClientError.rateLimited(retryAfter: 45)
+        let desc = error.errorDescription ?? ""
+        XCTAssertTrue(desc.contains("Rate limited"), "Error should mention rate limiting")
+        XCTAssertTrue(desc.contains("45"), "Error should include retry-after seconds")
+    }
+
+    func test_errorDescription_unexpectedResponse() {
+        let error = AIClientError.unexpectedResponse("Missing field 'choices'")
+        let desc = error.errorDescription ?? ""
+        XCTAssertTrue(desc.contains("Unexpected"), "Error should mention unexpected response")
+        XCTAssertTrue(desc.contains("choices"), "Error should include detail")
+    }
+
+    func test_errorDescription_networkError() {
+        let error = AIClientError.networkError(underlying: "The request timed out")
+        let desc = error.errorDescription ?? ""
+        XCTAssertTrue(desc.contains("Network"), "Error should mention network")
+        XCTAssertTrue(desc.contains("timed out"), "Error should include underlying message")
+    }
 }
 
 // MARK: - MockURLProtocol

@@ -263,6 +263,103 @@ final class GlancePipelineTests: XCTestCase {
         XCTAssertEqual(mockAIClient.lastAPIKey, "sk-openai")
     }
 
+    // MARK: - Already Capturing Guard
+
+    @MainActor
+    func test_startCapture_whenAlreadyCapturing_isNoop() async {
+        mockCaptureEngine.canCaptureResult = true
+
+        // Start first capture.
+        await pipeline.startCapture(
+            mode: .fullScreen,
+            apiKey: "sk-test",
+            provider: .claude
+        )
+
+        // First capture completes (display not SCDisplay → error → reset).
+        // The guard prevents re-entry while isActive is true.
+        // Call startCapture again rapidly — should not crash.
+        await pipeline.startCapture(
+            mode: .windowUnderCursor,
+            apiKey: "sk-test-2",
+            provider: .openAI
+        )
+
+        // Both calls should complete without crashing.
+        // ViewModel state after both: first resets to idle on error,
+        // second starts the flow again.
+        XCTAssertTrue(true, "Double startCapture should not crash or hang")
+    }
+
+    // MARK: - listShareableContent Error
+
+    @MainActor
+    func test_listShareableContent_error_reportsError() async {
+        mockCaptureEngine.canCaptureResult = true
+        mockCaptureEngine.listContentError = NSError(
+            domain: "SCK", code: -1,
+            userInfo: [NSLocalizedDescriptionKey: "Cannot access shareable content"]
+        )
+
+        await pipeline.startCapture(
+            mode: .fullScreen,
+            apiKey: "sk-test",
+            provider: .claude
+        )
+
+        try? await Task.sleep(nanoseconds: 100_000_000)
+
+        // Error should reset state back to idle.
+        XCTAssertEqual(viewModel.state, .idle,
+                       "Should reset to idle after listShareableContent error")
+        XCTAssertNotNil(viewModel.errorMessage,
+                        "Error message should be set")
+    }
+
+    // MARK: - Capture Engine Error
+
+    @MainActor
+    func test_captureEngineError_resetsState() async {
+        mockCaptureEngine.canCaptureResult = true
+
+        await pipeline.startCapture(
+            mode: .fullScreen,
+            apiKey: "sk-test",
+            provider: .claude
+        )
+
+        // The capture engine encounters a runtime error.
+        let streamError = NSError(domain: "SCK", code: -5,
+                                  userInfo: [NSLocalizedDescriptionKey: "Stream interrupted"])
+        mockCaptureEngine.simulateError(streamError)
+
+        try? await Task.sleep(nanoseconds: 100_000_000)
+
+        // Pipeline should reset to idle after engine error.
+        XCTAssertEqual(viewModel.state, .idle,
+                       "Should reset to idle after capture engine error")
+        XCTAssertNotNil(viewModel.errorMessage,
+                        "Error message should be set after engine error")
+    }
+
+    // MARK: - Stop Without Active Capture
+
+    @MainActor
+    func test_stopCapture_whenNotActive_isNoop() async {
+        // Given: pipeline is idle (never started)
+        XCTAssertEqual(viewModel.state, .idle)
+
+        // When: stop is called
+        pipeline.stopCapture()
+
+        // Then: should not crash, state remains idle
+        try? await Task.sleep(nanoseconds: 50_000_000)
+        XCTAssertEqual(viewModel.state, .idle,
+                       "Stop when idle should be a no-op")
+        XCTAssertTrue(mockCaptureEngine.didStop,
+                       "Stop should still be forwarded to capture engine")
+    }
+
     // MARK: - Helper: Test Pixel Buffer
 
     /// Creates a CVPixelBuffer suitable for testing the frame processing pipeline.

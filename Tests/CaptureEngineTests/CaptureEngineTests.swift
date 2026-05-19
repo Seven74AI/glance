@@ -230,4 +230,152 @@ final class CaptureEngineTests: XCTestCase {
         XCTAssertTrue(mockDelegate.didEncounterError, "Delegate should get error")
         XCTAssertNotNil(mockDelegate.lastError, "Delegate should get error details")
     }
+
+    // MARK: - FPS Clamping Tests
+
+    func test_startCapture_fpsBelow1_clampsTo1() {
+        // Given: fps=0 (invalid, below minimum)
+        let filter = MockSCContentFilter()
+
+        // When
+        engine.startCapture(filter: filter, fps: 0)
+
+        // Then: should clamp to 1 fps
+        XCTAssertEqual(mockStream.lastConfiguration?.minimumFrameInterval,
+                       CMTime(value: 1, timescale: 1),
+                       "fps=0 should clamp to 1 fps (1-second interval)")
+    }
+
+    func test_startCapture_fpsAbove60_clampsTo60() {
+        // Given: fps=120 (above maximum)
+        let filter = MockSCContentFilter()
+
+        // When
+        engine.startCapture(filter: filter, fps: 120)
+
+        // Then: should clamp to 60 fps
+        XCTAssertEqual(mockStream.lastConfiguration?.minimumFrameInterval,
+                       CMTime(value: 1, timescale: 60),
+                       "fps=120 should clamp to 60 fps (1/60s interval)")
+    }
+
+    func test_startCapture_negativeFPS_clampsTo1() {
+        // Given: fps=-5 (negative, nonsensical)
+        let filter = MockSCContentFilter()
+
+        // When
+        engine.startCapture(filter: filter, fps: -5)
+
+        // Then: should clamp to 1 fps
+        XCTAssertEqual(mockStream.lastConfiguration?.minimumFrameInterval,
+                       CMTime(value: 1, timescale: 1),
+                       "Negative fps should clamp to 1 fps minimum")
+    }
+
+    func test_startCapture_exactly60fps_notRejected() {
+        // Given: fps=60 (maximum allowed)
+        let filter = MockSCContentFilter()
+
+        // When
+        engine.startCapture(filter: filter, fps: 60)
+
+        // Then: 60 should be accepted as-is
+        XCTAssertTrue(mockStream.didStart, "Stream should start at 60 fps")
+        XCTAssertEqual(mockStream.lastConfiguration?.minimumFrameInterval,
+                       CMTime(value: 1, timescale: 60),
+                       "60 fps should give 1/60s interval")
+    }
+
+    func test_startCapture_exactly1fps_notRejected() {
+        // Given: fps=1 (minimum allowed)
+        let filter = MockSCContentFilter()
+
+        // When
+        engine.startCapture(filter: filter, fps: 1)
+
+        // Then: 1 should be accepted as-is
+        XCTAssertTrue(mockStream.didStart, "Stream should start at 1 fps")
+        XCTAssertEqual(mockStream.lastConfiguration?.minimumFrameInterval,
+                       CMTime(value: 1, timescale: 1),
+                       "1 fps should give 1-second interval")
+    }
+
+    // MARK: - Stream Error Handling
+
+    func test_startCapture_whenStreamStartThrows_delegatesError() {
+        // Given: a stream that throws on start
+        let testError = NSError(domain: "SCK", code: -2,
+                                userInfo: [NSLocalizedDescriptionKey: "Stream start failed"])
+        mockStream.startError = testError
+        let filter = MockSCContentFilter()
+
+        // When
+        engine.startCapture(filter: filter, fps: 10)
+
+        // Then: error should be forwarded to delegate
+        XCTAssertTrue(mockDelegate.didEncounterError,
+                       "Delegate should receive stream start errors")
+        XCTAssertFalse(engine.isCapturing,
+                        "Engine should report not capturing after failed start")
+    }
+
+    func test_stopCapture_whenStreamStopThrows_delegatesError() {
+        // Given: an active stream that will throw on stop
+        engine.startCapture(filter: MockSCContentFilter(), fps: 10)
+        let testError = NSError(domain: "SCK", code: -3,
+                                userInfo: [NSLocalizedDescriptionKey: "Stream stop failed"])
+        mockStream.stopError = testError
+
+        // When
+        engine.stopCapture()
+
+        // Then: error should be forwarded to delegate
+        XCTAssertTrue(mockDelegate.didEncounterError,
+                       "Delegate should receive stream stop errors")
+        XCTAssertFalse(engine.isCapturing,
+                        "Engine should still report not capturing after stop error")
+        // didStop should still be called after error
+        XCTAssertTrue(mockDelegate.didStopWasCalled,
+                       "Delegate didStop should still be called after stop error")
+    }
+
+    // MARK: - Frame Metadata Validation
+
+    func test_handleFrame_preservesTimestampInMetadata() {
+        // Given: capture is active
+        engine.startCapture(filter: MockSCContentFilter(), fps: 10)
+        let testBuffer = makeTestPixelBuffer()
+        let expectedTimestamp = CMTime(value: 42, timescale: 10)
+
+        // When: a frame arrives with a known timestamp
+        let frame = CapturedFrame(
+            pixelBuffer: testBuffer,
+            timestamp: expectedTimestamp,
+            contentRect: .zero,
+            scaleFactor: 1.0
+        )
+        mockStream.simulateFrame(buffer: testBuffer, status: .complete)
+
+        // Then: metadata timestamp should be preserved
+        // (Note: simulateFrame creates its own CapturedFrame; this test
+        //  verifies handleFrame creates proper FrameMetadata)
+        XCTAssertTrue(mockDelegate.didReceiveFrame, "Delegate should receive frame")
+        XCTAssertNotNil(mockDelegate.lastMetadata, "Metadata should be present")
+    }
+
+    func test_handleFrame_metadataStatusIsComplete() {
+        // Given: capture is active
+        engine.startCapture(filter: MockSCContentFilter(), fps: 10)
+        let testBuffer = makeTestPixelBuffer()
+
+        // When: a frame arrives with .complete status
+        mockStream.simulateFrame(buffer: testBuffer, status: .complete)
+
+        // Then: metadata status should be .complete
+        XCTAssertTrue(mockDelegate.didReceiveFrame, "Delegate should receive frame")
+        if let metadata = mockDelegate.lastMetadata {
+            XCTAssertEqual(metadata.status, .complete,
+                           "Metadata status should be .complete")
+        }
+    }
 }

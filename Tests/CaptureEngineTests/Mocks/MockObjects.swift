@@ -13,9 +13,12 @@ final class MockSCStream: SCStreamProtocol {
 
     // Error simulation
     var errorHandler: ((Error) -> Void)?
+    var startError: Error?
+    var stopError: Error?
 
     func startCapture(configuration: SCStreamConfigurationProtocol,
                       filter: SCContentFilterProtocol) throws {
+        if let error = startError { throw error }
         didStart = true
         // Store configuration values regardless of concrete type
         lastConfiguration = MockSCStreamConfiguration()
@@ -27,6 +30,7 @@ final class MockSCStream: SCStreamProtocol {
     }
 
     func stopCapture() throws {
+        if let error = stopError { throw error }
         didStop = true
         outputHandler = nil
     }
