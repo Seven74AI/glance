@@ -4,6 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Thanks — Glance</title>
+
+    <!-- Plausible Analytics -->
+    <script defer data-domain="seven74ai.github.io" src="https://plausible.io/js/script.js"></script>
+
     <link rel="stylesheet" href="styles.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 </head>
@@ -51,5 +55,10 @@
             </div>
         </footer>
     </div>
+
+    <!-- Plausible custom event: confirmed signup conversion -->
+    <script>
+        plausible('Waitlist Conversion', {props: {status: 'confirmed'}});
+    </script>
 </body>
 </html>
