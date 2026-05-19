@@ -87,7 +87,10 @@ let package = Package(
         .target(
             name: "AIProvider",
             dependencies: [],
-            path: "Sources/AIProvider"
+            path: "Sources/AIProvider",
+            swiftSettings: [
+                .enableUpcomingFeature("StrictConcurrency")
+            ]
         ),
         .testTarget(
             name: "AIProviderTests",
