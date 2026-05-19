@@ -41,6 +41,8 @@ GitHub Pages takes ~1 minute to deploy after the first push.
 docs/
   index.html    — Landing page
   styles.css    — Styling (dark theme)
+  thanks.html   — Post-submit confirmation page
+  og-image.png  — Social preview image (1200×630)
 README.md       — This file
 ```
 
