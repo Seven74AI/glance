@@ -9,7 +9,7 @@ final class MockSCStream: SCStreamProtocol {
     var didStart = false
     var didStop = false
     var lastConfiguration: MockSCStreamConfiguration?
-    var outputHandler: ((CVPixelBuffer, SCFrameStatus) -> Void)?
+    var outputHandler: ((CapturedFrame) -> Void)?
 
     // Error simulation
     var errorHandler: ((Error) -> Void)?
@@ -32,7 +32,14 @@ final class MockSCStream: SCStreamProtocol {
     }
 
     func simulateFrame(buffer: CVPixelBuffer, status: SCFrameStatus) {
-        outputHandler?(buffer, status)
+        guard status == .complete else { return }
+        let frame = CapturedFrame(
+            pixelBuffer: buffer,
+            timestamp: CMTime(value: 1, timescale: 10),
+            contentRect: .zero,
+            scaleFactor: 1.0
+        )
+        outputHandler?(frame)
     }
 
     func simulateError(_ error: Error) {

@@ -120,11 +120,9 @@ final class CaptureEngine: CaptureEngineProtocol {
             let stream = streamFactory(filter)
             self.stream = stream
 
-            // Wire frame delivery: SCStreamAdapter → CaptureEngine
-            if let adapter = stream as? SCStreamAdapter {
-                adapter.onFrame = { [weak self] frame in
-                    self?.handleFrame(frame)
-                }
+            // Wire frame delivery via protocol — works for both mock and real streams
+            stream.outputHandler = { [weak self] frame in
+                self?.handleFrame(frame)
             }
 
             // Configure stream
@@ -228,7 +226,7 @@ final class SCStreamAdapter: NSObject, SCStreamProtocol {
     private let outputQueue: DispatchQueue
 
     /// Callback invoked when a new frame is received from SCK
-    var onFrame: ((CapturedFrame) -> Void)?
+    var outputHandler: ((CapturedFrame) -> Void)?
 
     init(filter: SCContentFilterProtocol) {
         self.filter = filter
@@ -288,7 +286,7 @@ extension SCStreamAdapter: SCStreamOutput {
             scaleFactor: 1.0
         )
 
-        onFrame?(frame)
+        outputHandler?(frame)
     }
 }
 

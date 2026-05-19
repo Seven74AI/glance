@@ -6,6 +6,10 @@ import CoreGraphics
 
 /// Wraps SCStream for testability
 protocol SCStreamProtocol: AnyObject {
+    /// Callback invoked when a new frame is received from the stream.
+    /// Set by CaptureEngine.startCapture to wire frame delivery.
+    var outputHandler: ((CapturedFrame) -> Void)? { get set }
+
     func startCapture(configuration: SCStreamConfigurationProtocol,
                       filter: SCContentFilterProtocol) throws
     func stopCapture() throws

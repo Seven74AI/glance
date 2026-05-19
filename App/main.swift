@@ -75,9 +75,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func startCapture() {
         Task {
             do {
-                let content = try await engine.listShareableContent()
+                // Use SCShareableContent.current directly for real SCDisplay objects.
+                // The CaptureEngine.listShareableContent() returns ConcreteDisplay
+                // protocol wrappers which cannot be cast to SCDisplay.
+                let content = try await SCShareableContent.current
 
-                guard let display = content.displays.first as? SCDisplay else {
+                guard let display = content.displays.first else {
                     print("No displays available for capture")
                     return
                 }
