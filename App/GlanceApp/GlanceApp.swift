@@ -37,6 +37,14 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
     private var preferencesWindowController: PreferencesWindowController?
     private var overlayWindow: OverlayWindow?
 
+    // MARK: - Config & Coordinator
+
+    /// Loaded application configuration (~/.glance/config.json).
+    private let config: GlanceConfig
+
+    /// Session coordinator bridging Config → ProviderRegistry → AI Provider resolution.
+    private let sessionCoordinator: SessionCoordinator
+
     // MARK: - Pipeline
 
     /// The GlancePipeline orchestrating: Capture → Process → AI → Display.
@@ -48,6 +56,18 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
     // MARK: - Initialization
 
     public override init() {
+        // Load configuration (auto-creates default if missing).
+        let loadedConfig: GlanceConfig
+        do {
+            loadedConfig = try GlanceConfig.load(from: GlanceConfig.defaultPath())
+        } catch {
+            print("[Glance] Failed to load config: \(error). Using defaults.")
+            loadedConfig = GlanceConfig.defaultConfig
+        }
+
+        self.config = loadedConfig
+        self.sessionCoordinator = SessionCoordinator(config: loadedConfig)
+
         // Create the pipeline with default dependencies.
         let vm = StateMachineViewModel()
         self.viewModel = vm

@@ -58,7 +58,7 @@ public enum ProviderError: Error, Sendable, Equatable {
 // MARK: - ProviderConfig
 
 /// Configuration for a single AI provider, loaded from JSON config.
-public struct ProviderConfig: Sendable, Decodable {
+public struct ProviderConfig: Sendable, Codable {
     public let apiKey: String
     public let model: String
 
