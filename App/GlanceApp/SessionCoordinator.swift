@@ -50,6 +50,9 @@ public final class SessionCoordinator: ObservableObject {
                 config: aiConfig,
                 session: .shared
             )
+        } catch {
+            print("[Glance] Failed to initialize ProviderRegistry: \(error)")
+            self.providerRegistry = nil
         }
     }
 

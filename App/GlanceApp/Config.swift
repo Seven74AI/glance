@@ -133,6 +133,9 @@ public struct GlanceConfig: Sendable, Codable {
     /// - Returns: An AIProviderConfiguration suitable for ProviderRegistry initialization.
     /// - Throws: `ConfigError` if the default provider is missing.
     public func toAIProviderConfiguration() throws -> AIProviderConfiguration {
+        guard providers[defaultProvider] != nil else {
+            throw ConfigError.defaultProviderMissing(defaultProvider)
+        }
         return AIProviderConfiguration(
             providers: providers,
             defaultProvider: defaultProvider

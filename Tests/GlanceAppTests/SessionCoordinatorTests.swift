@@ -72,4 +72,24 @@ final class SessionCoordinatorTests: XCTestCase {
         XCTAssertEqual(coordinator.resolveProviderID(for: .claude), "claude")
         XCTAssertEqual(coordinator.resolveProviderID(for: .openAI), "openai")
     }
+
+    // MARK: - Error Handling
+
+    func test_coordinator_missingDefaultProvider_initializesWithNilRegistry() {
+        // When the default provider is missing from the providers dict,
+        // toAIProviderConfiguration() throws. The coordinator should catch
+        // the error and set providerRegistry to nil instead of crashing.
+        var config = GlanceConfig.defaultConfig
+        config.defaultProvider = "nonexistent"
+        // Remove all providers to make the defaultProvider clearly invalid.
+        config.providers = [:]
+
+        let coordinator = SessionCoordinator(config: config)
+
+        // Coordinator should still initialize (no crash).
+        XCTAssertEqual(coordinator.currentState, .idle)
+        // providerRegistry should be nil since init failed gracefully.
+        XCTAssertNil(coordinator.providerRegistry,
+                     "providerRegistry should be nil when config has no valid providers")
+    }
 }

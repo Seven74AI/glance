@@ -159,4 +159,18 @@ final class ConfigTests: XCTestCase {
         XCTAssertNotNil(aiConfig.providers["claude"])
         XCTAssertEqual(aiConfig.providers["claude"]?.apiKey, "sk-...")
     }
+
+    func test_config_toAIProviderConfiguration_throwsWhenDefaultProviderMissing() {
+        var config = GlanceConfig.defaultConfig
+        // Set a default provider that doesn't exist in providers.
+        config.defaultProvider = "nonexistent"
+
+        XCTAssertThrowsError(try config.toAIProviderConfiguration()) { error in
+            guard case ConfigError.defaultProviderMissing(let id) = error else {
+                XCTFail("Expected ConfigError.defaultProviderMissing, got \(error)")
+                return
+            }
+            XCTAssertEqual(id, "nonexistent")
+        }
+    }
 }
