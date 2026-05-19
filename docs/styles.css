@@ -382,6 +382,47 @@ header {
     color: var(--text-secondary);
 }
 
+/* Thanks page */
+
+.thanks-hero {
+    text-align: center;
+    padding: 120px 0;
+}
+
+.thanks-icon {
+    width: 64px;
+    height: 64px;
+    background: var(--accent-dim);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 24px;
+}
+
+.thanks-title {
+    font-size: 36px;
+    font-weight: 700;
+    margin-bottom: 16px;
+}
+
+.thanks-desc {
+    font-size: 18px;
+    color: var(--text-secondary);
+    max-width: 480px;
+    margin: 0 auto 40px;
+}
+
+.thanks-back {
+    color: var(--accent);
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.thanks-back:hover {
+    text-decoration: underline;
+}
+
 /* Footer */
 
 footer {
